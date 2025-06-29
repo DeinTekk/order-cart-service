@@ -34,7 +34,7 @@ public class OrderController {
             Order newOrder = orderService.createOrderFromCart(userId, request.getShippingAddress(), request.getPaymentMethod());
             return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
@@ -66,7 +66,7 @@ public class OrderController {
             Order updatedOrder = orderService.updateOrderStatus(orderId, newStatus);
             return new ResponseEntity<>(updatedOrder, HttpStatus.OK);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 

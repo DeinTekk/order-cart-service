@@ -45,7 +45,7 @@ public class ShoppingCartController {
             // Imprime el error para depuración
             System.err.println("Error al añadir producto al carrito: " + e.getMessage());
             // Devuelve un error 400 Bad Request si el producto no se encontró, etc.
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
     }
 
@@ -62,7 +62,7 @@ public class ShoppingCartController {
             return new ResponseEntity<>(updatedCart, HttpStatus.OK);
         } catch (RuntimeException e) {
             System.err.println("Error al actualizar cantidad del producto en el carrito: " + e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND); // 404 si el carrito o producto no existe
+            return ResponseEntity.notFound().build(); // 404 si el carrito o producto no existe
         }
     }
 
@@ -77,7 +77,7 @@ public class ShoppingCartController {
             return new ResponseEntity<>(updatedCart, HttpStatus.OK);
         } catch (RuntimeException e) {
             System.err.println("Error al eliminar producto del carrito: " + e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND); // 404 si el carrito o producto no existe
+            return ResponseEntity.notFound().build(); // 404 si el carrito o producto no existe
         }
     }
 
@@ -90,7 +90,7 @@ public class ShoppingCartController {
             return new ResponseEntity<>(clearedCart, HttpStatus.OK);
         } catch (RuntimeException e) {
             System.err.println("Error al vaciar el carrito: " + e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND); // 404 si el carrito no existe
+            return ResponseEntity.notFound().build(); // 404 si el carrito no existe
         }
     }
 }
