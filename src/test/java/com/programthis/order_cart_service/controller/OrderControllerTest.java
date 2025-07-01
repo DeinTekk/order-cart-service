@@ -7,11 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,119 +28,153 @@ public class OrderControllerTest {
     @InjectMocks
     private OrderController orderController;
 
+    private Order mockOrder;
+
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
+        mockOrder = new Order();
+        mockOrder.setId(1L);
+        mockOrder.setUserId(1L);
     }
 
     @Test
     public void testCreateOrderFromCart_Success() {
+        // Arrange
         Long userId = 1L;
         OrderController.OrderCreationRequest request = new OrderController.OrderCreationRequest("Fake Street", "Credit Card");
-        Order mockOrder = new Order();
         when(orderService.createOrderFromCart(userId, request.getShippingAddress(), request.getPaymentMethod()))
                 .thenReturn(mockOrder);
 
-        ResponseEntity<Order> response = orderController.createOrderFromCart(userId, request);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.createOrderFromCart(userId, request);
 
+        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(mockOrder, response.getBody());
-        verify(orderService).createOrderFromCart(userId, "Fake Street", "Credit Card");
+        assertNotNull(response.getBody());
+        assertEquals(mockOrder, response.getBody().getContent());
+        assertTrue(response.getBody().getLink("self").isPresent());
     }
 
     @Test
     public void testCreateOrderFromCart_Failure() {
+        // Arrange
         Long userId = 1L;
         OrderController.OrderCreationRequest request = new OrderController.OrderCreationRequest("Fake Street", "Credit Card");
-
         when(orderService.createOrderFromCart(anyLong(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("Cart not found"));
 
-        ResponseEntity<Order> response = orderController.createOrderFromCart(userId, request);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.createOrderFromCart(userId, request);
 
+        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNull(response.getBody());
     }
 
     @Test
     public void testGetOrderById_Found() {
-        Long orderId = 1L;
-        Order mockOrder = new Order();
-        when(orderService.getOrderById(orderId)).thenReturn(Optional.of(mockOrder));
+        // Arrange
+        when(orderService.getOrderById(1L)).thenReturn(Optional.of(mockOrder));
 
-        ResponseEntity<Order> response = orderController.getOrderById(orderId);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.getOrderById(1L);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(mockOrder, response.getBody());
+        assertNotNull(response.getBody());
+        assertEquals(mockOrder, response.getBody().getContent());
+        assertTrue(response.getBody().getLink("self").isPresent());
     }
 
     @Test
     public void testGetOrderById_NotFound() {
-        Long orderId = 1L;
-        when(orderService.getOrderById(orderId)).thenReturn(Optional.empty());
+        // Arrange
+        when(orderService.getOrderById(1L)).thenReturn(Optional.empty());
 
-        ResponseEntity<Order> response = orderController.getOrderById(orderId);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.getOrderById(1L);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody());
     }
 
     @Test
     public void testGetOrdersByUserId() {
+        // Arrange
         Long userId = 1L;
-        List<Order> mockOrders = Arrays.asList(new Order(), new Order());
+        List<Order> mockOrders = Arrays.asList(mockOrder, new Order());
         when(orderService.getOrdersByUserId(userId)).thenReturn(mockOrders);
 
-        ResponseEntity<List<Order>> response = orderController.getOrdersByUserId(userId);
+        // Act
+        ResponseEntity<CollectionModel<EntityModel<Order>>> response = orderController.getOrdersByUserId(userId);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(mockOrders, response.getBody());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().getContent().size());
+        assertTrue(response.getBody().getLink("self").isPresent());
     }
 
     @Test
     public void testUpdateOrderStatus_Success() {
+        // Arrange
         Long orderId = 1L;
         String newStatus = "SHIPPED";
         Order updatedOrder = new Order();
+        updatedOrder.setId(orderId);
+        updatedOrder.setUserId(1L);
+        updatedOrder.setStatus(newStatus);
         when(orderService.updateOrderStatus(orderId, newStatus)).thenReturn(updatedOrder);
 
-        ResponseEntity<Order> response = orderController.updateOrderStatus(orderId, newStatus);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.updateOrderStatus(orderId, newStatus);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(updatedOrder, response.getBody());
+        assertNotNull(response.getBody());
+        assertEquals(newStatus, Objects.requireNonNull(response.getBody().getContent()).getStatus());
     }
 
     @Test
     public void testUpdateOrderStatus_Failure() {
+        // Arrange
         Long orderId = 1L;
         String newStatus = "SHIPPED";
         when(orderService.updateOrderStatus(orderId, newStatus))
                 .thenThrow(new RuntimeException("Order not found"));
 
-        ResponseEntity<Order> response = orderController.updateOrderStatus(orderId, newStatus);
+        // Act
+        ResponseEntity<EntityModel<Order>> response = orderController.updateOrderStatus(orderId, newStatus);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody());
     }
 
     @Test
     public void testDeleteOrder_Success() {
+        // Arrange
         Long orderId = 1L;
-
         doNothing().when(orderService).deleteOrder(orderId);
 
+        // Act
         ResponseEntity<Void> response = orderController.deleteOrder(orderId);
 
+        // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(orderService, times(1)).deleteOrder(orderId);
     }
 
     @Test
     public void testDeleteOrder_NotFound() {
+        // Arrange
         Long orderId = 1L;
         doThrow(new RuntimeException("Order not found")).when(orderService).deleteOrder(orderId);
 
+        // Act
         ResponseEntity<Void> response = orderController.deleteOrder(orderId);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 }

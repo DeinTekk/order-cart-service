@@ -7,8 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -22,100 +25,133 @@ public class ShoppingCartControllerTest {
     private ShoppingCartController shoppingCartController;
 
     private ShoppingCart cart;
+    private Long userId = 1L;
+    private Long productId = 100L;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         cart = new ShoppingCart();
         cart.setId(1L);
+        cart.setUserId(userId);
     }
 
     @Test
     public void testGetOrCreateCart() {
-        when(shoppingCartService.getOrCreateShoppingCart(1L)).thenReturn(cart);
+        // Arrange
+        when(shoppingCartService.getOrCreateShoppingCart(userId)).thenReturn(cart);
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.getOrCreateCart(1L);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.getOrCreateCart(userId);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(cart, response.getBody());
+        assertNotNull(response.getBody());
+        assertEquals(cart, response.getBody().getContent());
+        assertTrue(response.getBody().getLink("self").isPresent());
     }
 
     @Test
     public void testAddProductToCart_Success() {
-        when(shoppingCartService.addProductToCart(1L, 100L, 2)).thenReturn(cart);
+        // Arrange
+        when(shoppingCartService.addProductToCart(userId, productId, 2)).thenReturn(cart);
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.addProductToCart(1L, 100L, 2);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.addProductToCart(userId, productId, 2);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(cart, response.getBody());
+        assertNotNull(response.getBody());
+        assertEquals(cart, response.getBody().getContent());
     }
 
     @Test
     public void testAddProductToCart_Failure() {
-        when(shoppingCartService.addProductToCart(1L, 100L, 2)).thenThrow(new RuntimeException("Product not found"));
+        // Arrange
+        when(shoppingCartService.addProductToCart(userId, productId, 2)).thenThrow(new RuntimeException("Product not found"));
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.addProductToCart(1L, 100L, 2);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.addProductToCart(userId, productId, 2);
 
+        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNull(response.getBody());
     }
 
     @Test
     public void testUpdateProductQuantityInCart_Success() {
-        when(shoppingCartService.updateProductQuantityInCart(1L, 100L, 3)).thenReturn(cart);
+        // Arrange
+        when(shoppingCartService.updateProductQuantityInCart(userId, productId, 3)).thenReturn(cart);
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.updateProductQuantityInCart(1L, 100L, 3);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.updateProductQuantityInCart(userId, productId, 3);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(cart, response.getBody());
+        assertEquals(cart, Objects.requireNonNull(response.getBody()).getContent());
     }
 
     @Test
     public void testUpdateProductQuantityInCart_Failure() {
-        when(shoppingCartService.updateProductQuantityInCart(1L, 100L, 3)).thenThrow(new RuntimeException("Product not found"));
+        // Arrange
+        when(shoppingCartService.updateProductQuantityInCart(userId, productId, 3)).thenThrow(new RuntimeException("Product not found"));
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.updateProductQuantityInCart(1L, 100L, 3);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.updateProductQuantityInCart(userId, productId, 3);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
     }
 
     @Test
     public void testRemoveProductFromCart_Success() {
-        when(shoppingCartService.removeProductFromCart(1L, 100L)).thenReturn(cart);
+        // Arrange
+        when(shoppingCartService.removeProductFromCart(userId, productId)).thenReturn(cart);
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.removeProductFromCart(1L, 100L);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.removeProductFromCart(userId, productId);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(cart, response.getBody());
+        assertEquals(cart, Objects.requireNonNull(response.getBody()).getContent());
     }
 
     @Test
     public void testRemoveProductFromCart_Failure() {
-        when(shoppingCartService.removeProductFromCart(1L, 100L)).thenThrow(new RuntimeException("Product not in cart"));
+        // Arrange
+        when(shoppingCartService.removeProductFromCart(userId, productId)).thenThrow(new RuntimeException("Product not in cart"));
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.removeProductFromCart(1L, 100L);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.removeProductFromCart(userId, productId);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
     }
 
     @Test
     public void testClearCart_Success() {
-        when(shoppingCartService.clearCart(1L)).thenReturn(cart);
+        // Arrange
+        when(shoppingCartService.clearCart(userId)).thenReturn(cart);
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.clearCart(1L);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.clearCart(userId);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(cart, response.getBody());
+        assertEquals(cart, Objects.requireNonNull(response.getBody()).getContent());
     }
 
     @Test
     public void testClearCart_Failure() {
-        when(shoppingCartService.clearCart(1L)).thenThrow(new RuntimeException("Cart not found"));
+        // Arrange
+        when(shoppingCartService.clearCart(userId)).thenThrow(new RuntimeException("Cart not found"));
 
-        ResponseEntity<ShoppingCart> response = shoppingCartController.clearCart(1L);
+        // Act
+        ResponseEntity<EntityModel<ShoppingCart>> response = shoppingCartController.clearCart(userId);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
     }
